@@ -1,7 +1,3 @@
-Here's a comprehensive README file that combines all the details into a single document for your GitHub repository:
-
----
-
 # Employee Management System
 
 ## Overview
