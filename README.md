@@ -19,6 +19,8 @@ Before setting up the application, ensure you have the following installed:
 
 - Both the Authentication Server and the Employee Service require keys for encoding and decoding JWT tokens.
 - You need to generate these keys and store them locally.
+- Authentication server requires both private and public keys.
+- Employee service requires public key only
 - Update the file paths for these keys in the `application.properties` files for both services, which you can access through the Config Server.
 
 ### 2. **Database Configuration**
