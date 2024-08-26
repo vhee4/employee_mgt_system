@@ -1,6 +1,7 @@
 package com.EmployeeMgtSystem.EmployeeService.controller;
 
 import com.EmployeeMgtSystem.EmployeeService.dto.request.CreateEmployeeRequest;
+import com.EmployeeMgtSystem.EmployeeService.dto.request.UpdateEmployeeRequest;
 import com.EmployeeMgtSystem.EmployeeService.dto.response.BaseResponse;
 import com.EmployeeMgtSystem.EmployeeService.exceptions.ErrorDetails;
 import com.EmployeeMgtSystem.EmployeeService.service.EmployeeService;
@@ -49,6 +50,21 @@ public class EmployeeController {
         String bearerToken = httpRequest.getHeader("Authorization");
         System.out.println("Bearer token:" + bearerToken);
         return new ResponseEntity<>(employeeService.createEmployee(request, bearerToken, authentication), HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "Update Employee Endpoint", description = "This endpoint allows employee details to be updated (Restricted to admins)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "HTTP STATUS OK"),
+            @ApiResponse(responseCode = "404", description = "HTTP STATUS NOT_FOUND", content = @Content(schema = @Schema(implementation = ErrorDetails.class))),
+    })
+
+    @PutMapping
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<BaseResponse> updateEmployee(@RequestBody UpdateEmployeeRequest request, HttpServletRequest httpRequest,
+                                                       Authentication authentication) {
+        String bearerToken = httpRequest.getHeader("Authorization");
+        System.out.println("Bearer token:" + bearerToken);
+        return new ResponseEntity<>(employeeService.editEmployee(request, bearerToken, authentication), HttpStatus.CREATED);
     }
 
 

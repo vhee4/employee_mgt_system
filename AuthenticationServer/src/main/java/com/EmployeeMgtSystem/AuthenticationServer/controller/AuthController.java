@@ -9,6 +9,7 @@ import com.EmployeeMgtSystem.AuthenticationServer.exceptions.ErrorDetails;
 import com.EmployeeMgtSystem.AuthenticationServer.service.AuthService;
 import com.EmployeeMgtSystem.AuthenticationServer.service.UserService;
 import com.EmployeeMgtSystem.AuthenticationServer.service.impl.EmployeeClientService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -49,11 +50,13 @@ public class AuthController {
         return authService.login(loginRequest);
     }
 
+    @Hidden
     @GetMapping("/user")
     public UserResponse getUserByEmail(@RequestParam String email) {
         return employeeClientService.getUserByEmail(email);
     }
 
+    @Hidden
     @Operation(summary = "Create user endpoint", security = @SecurityRequirement(name = "bearerAuth"), description = "This endpoint allows user creation (used by employee service)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "HTTP STATUS OK"),

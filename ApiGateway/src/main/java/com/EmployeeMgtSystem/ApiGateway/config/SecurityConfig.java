@@ -28,7 +28,6 @@ public class SecurityConfig {
                 .sessionManagement(Customizer.withDefaults())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                // Allow all requests to pass through
                 .csrf(csrf->{csrf.disable();csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());});  // Disable CSRF as the API Gateway doesn't handle forms
 
         return http.build();

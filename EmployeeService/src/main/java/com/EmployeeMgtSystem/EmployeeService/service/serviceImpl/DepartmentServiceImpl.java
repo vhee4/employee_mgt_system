@@ -57,7 +57,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional
-    public BaseResponse editDepartment(Long id, CreateDepartmentRequest request, Authentication authentication) {
+    public BaseResponse editDepartment(int id, CreateDepartmentRequest request, Authentication authentication) {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
 

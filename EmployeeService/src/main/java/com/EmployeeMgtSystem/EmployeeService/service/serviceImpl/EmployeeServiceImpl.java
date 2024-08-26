@@ -2,6 +2,7 @@ package com.EmployeeMgtSystem.EmployeeService.service.serviceImpl;
 
 import com.EmployeeMgtSystem.EmployeeService.dto.request.CreateEmployeeRequest;
 import com.EmployeeMgtSystem.EmployeeService.dto.request.CreateUserRequest;
+import com.EmployeeMgtSystem.EmployeeService.dto.request.UpdateEmployeeRequest;
 import com.EmployeeMgtSystem.EmployeeService.dto.response.BaseResponse;
 import com.EmployeeMgtSystem.EmployeeService.dto.response.EmployeeResponse;
 import com.EmployeeMgtSystem.EmployeeService.dto.response.UserResponse;
@@ -37,6 +38,7 @@ import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
@@ -59,11 +61,11 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     @Transactional
     public Mono<BaseResponse> createEmployee(CreateEmployeeRequest request, String token, Authentication authentication) {
-
-        Employee employee = createEmployeeEntity(request, authentication);
+        String password = generatePassword();
+        Employee employee = createEmployeeEntity(request, authentication,password);
         Department department = departmentRepository.findById(request.getDepartmentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found. Create a new Department if none exists"));
-        return callAuthService(request, token)
+        return callAuthService(request, token,password)
                 .flatMap(userResponse -> {
                     employee.setUserId(userResponse.getId());
                     employee.setDepartment(department);
@@ -71,7 +73,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                         employeeRepository.save(employee);
                         EmployeeResponse employeeResponse = createEmployeeResponse(employee);
                         try {
-                            sendWelcomeEmail(employee, request.getPassword());
+                            sendWelcomeEmail(employee, password);
                         } catch (BadRequestException e) {
                             throw new BadRequestException("Email sending failed:" + e.getMessage());
                         }
@@ -81,8 +83,24 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public Mono<BaseResponse> editEmployee(CreateEmployeeRequest request, String token, Authentication authentication) {
-        return null;
+    public BaseResponse editEmployee(UpdateEmployeeRequest request, String token, Authentication authentication) {
+        Employee employee = employeeRepository.findById(request.getEmployeeId())
+                .orElseThrow(()-> new ResourceNotFoundException("Employee not found"));
+        Department department = departmentRepository.findById(request.getDepartmentId())
+                .orElseThrow(()-> new ResourceNotFoundException("Employee not found"));
+
+        employee.setDepartment(department);
+        employee.setEmploymentStatus(EmploymentStatus.valueOf(request.getEmploymentStatus()));
+        employee.setPhoneNumber(request.getPhoneNumber());
+        employee.setHireDate(LocalDate.parse(request.getHireDate()));
+        employee.setPosition(request.getPosition());
+        employee.setSalary(request.getSalary());
+        employee.setUpdatedTime(LocalDateTime.now());
+        employee.setUpdatedBy(authentication.getName());
+
+        employeeRepository.save(employee);
+        return BaseResponse.getSuccessfulResponse("Employee updated successfully",createEmployeeResponse(employee));
+
     }
 
     public BaseResponse getAllEmployees(String name, String sortBy, String sortOrder, int page, int size) {
@@ -96,7 +114,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public BaseResponse getEmployeeById(Long id) {
-        Employee employee = employeeRepository.findById(Math.toIntExact(id)).orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+        Employee employee = employeeRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
         return BaseResponse.getResponse("Employee Retrieved successfully", createEmployeeResponse(employee), HttpStatus.OK);
     }
 
@@ -126,12 +144,12 @@ public class EmployeeServiceImpl implements EmployeeService {
         };
     }
 
-    private Employee createEmployeeEntity(CreateEmployeeRequest request, Authentication authentication) {
+    private Employee createEmployeeEntity(CreateEmployeeRequest request, Authentication authentication,String password) {
         Optional<Employee> optEmployee =  employeeRepository.findByEmail(request.getEmail());
         if(optEmployee.isPresent()){
             throw new BadRequestException("Email already exists");
         }
-        boolean validPassword = passwordValidator.validate(request.getPassword());
+        boolean validPassword = passwordValidator.validate(password);
         if(!validPassword){
             throw new BadRequestException("Password must be at least 8 characters long, and include at least one uppercase letter, one lowercase letter, one digit, and one special character.");
         }
@@ -142,7 +160,6 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .middleName(request.getMiddleName())
                 .email(request.getEmail())
                 .phoneNumber(request.getPhoneNumber())
-//                .dateOfBirth(LocalDate.parse(request.getDateOfBirth()))
                 .hireDate(LocalDate.parse(request.getHireDate()))
                 .employmentStatus(EmploymentStatus.ACTIVE)
                 .position(request.getPosition())
@@ -154,13 +171,13 @@ public class EmployeeServiceImpl implements EmployeeService {
         return employee;
     }
 
-    private Mono<UserResponse> callAuthService(CreateEmployeeRequest request, String token) {
+    private Mono<UserResponse> callAuthService(CreateEmployeeRequest request, String token,String password) {
         CreateUserRequest userRequest = CreateUserRequest.builder()
                 .email(request.getEmail())
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .role(request.getRole())
-                .password(request.getPassword())
+                .password(password)
                 .build();
 
         return authClientService.createUser(userRequest, token)
@@ -198,12 +215,12 @@ public class EmployeeServiceImpl implements EmployeeService {
                 employee.getDepartment().getId(),
                 employee.getEmail(),
                 employee.getPhoneNumber() == null ? null : employee.getPhoneNumber(),
-//                employee.getDateOfBirth() == null ? null : employee.getDateOfBirth(),
                 employee.getHireDate() == null ? null : employee.getHireDate(),
                 employee.getEmploymentStatus() == null ? null : employee.getEmploymentStatus().name(),
                 employee.getPosition() == null ? null : employee.getPosition(),
                 employee.getSalary() == null ? null : employee.getSalary(),
                 employee.getCreatedBy(),
+                employee.getUpdatedBy(),
                 employee.getStatus(),
                 employee.getCreatedTime(),
                 employee.getUpdatedTime()
@@ -240,6 +257,17 @@ public class EmployeeServiceImpl implements EmployeeService {
         String subject = "Welcome to the Company!";
         String text =emailUtils.welcomeMessage(employee,temporaryPassword);
         emailService.sendEmail(employee.getEmail(), subject, text);
+    }
+
+    private String generatePassword(){
+        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+        Random random = new Random();
+        StringBuilder password = new StringBuilder(8);
+
+        for (int i = 0; i < 8; i++) {
+            password.append(characters.charAt(random.nextInt(characters.length())));
+        }
+        return password.toString();
     }
 
 }

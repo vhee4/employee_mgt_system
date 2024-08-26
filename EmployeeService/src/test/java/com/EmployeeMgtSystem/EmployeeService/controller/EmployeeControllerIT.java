@@ -108,9 +108,8 @@ public class EmployeeControllerIT {
         request.setHireDate("2024-08-25");
         request.setPosition("Developer");
         request.setSalary(new BigDecimal("50000"));
-        request.setDepartmentId(1L);
+        request.setDepartmentId(1);
         request.setRole(role);
-        request.setPassword("StrongP@ssword1");
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/employee")
                         .contentType(MediaType.APPLICATION_JSON)

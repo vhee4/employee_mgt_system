@@ -57,7 +57,7 @@ public class DepartmentController {
     })
     @PreAuthorize("hasAuthority('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<BaseResponse> updateDepartment(@PathVariable Long id, @Valid @RequestBody CreateDepartmentRequest request, Authentication authentication) {
+    public ResponseEntity<BaseResponse> updateDepartment(@PathVariable int id, @Valid @RequestBody CreateDepartmentRequest request, Authentication authentication) {
         BaseResponse response = departmentService.editDepartment(id, request, authentication);
         return new ResponseEntity<>(response, response.getStatus());
     }

@@ -23,12 +23,12 @@ public class EmployeeResponse {
     private Integer departmentId;
     private String email;
     private String phoneNumber;
-//    private LocalDate dateOfBirth;
     private LocalDate hireDate;
     private String employmentStatus;
     private String position;
     private BigDecimal salary;
     private String createdBy;
+    private String updatedBy;
     private Status status;
     private LocalDateTime createdAt;
     private LocalDateTime modifiedAt;

@@ -24,20 +24,14 @@ public class CreateEmployeeRequest {
     @Email(message = "Email format is invalid")
     @Pattern(regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", message = "Email should have a valid domain")
     private String email;
-    @NotNull(message = "please pass in password")
-    @NotEmpty(message = "please pass in password")
-    private String password;
     @NotNull(message = "please pass in role")
     @NotEmpty(message = "please pass in role")
     private String role;
     @NotNull(message = "please pass in department id")
-    private Long departmentId;
+    private int departmentId;
     @NotNull(message = "please pass in phone number")
     @NotEmpty(message = "please pass in phone number")
     private String phoneNumber;
-//    @NotNull(message = "please pass in date of birth")
-//    @NotEmpty(message = "please pass in date of birth")
-//    private String dateOfBirth;
     @NotNull(message = "please pass in hire date")
     @NotEmpty(message = "please pass in hire date")
     private String hireDate;

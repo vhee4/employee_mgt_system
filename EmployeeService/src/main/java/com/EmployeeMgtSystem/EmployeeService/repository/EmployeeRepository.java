@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface EmployeeRepository extends JpaRepository<Employee,Integer> {
+public interface EmployeeRepository extends JpaRepository<Employee,Long> {
     Page<Employee> findAll(Specification<Employee> specification, Pageable pageable);
     Page<Employee> findByDepartmentId(Long departmentId, Pageable pageable);
     Optional<Employee> findByUserId(long userid);
