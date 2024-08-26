@@ -10,5 +10,5 @@ public interface DepartmentService {
     BaseResponse createDepartment(CreateDepartmentRequest request,Authentication authentication);
     BaseResponse editDepartment(int id, CreateDepartmentRequest request, Authentication authentication);
     BaseResponse getAllDepartments(int page, int size);
-    BaseResponse getDepartmentById(Long id);
+    BaseResponse getDepartmentById(int id);
     }

@@ -81,7 +81,7 @@ public class DepartmentController {
             @ApiResponse(responseCode = "404", description = "HTTP STATUS NOT_FOUND", content = @Content(schema = @Schema(implementation = ErrorDetails.class))),
     })
     @GetMapping("/{id}")
-    public ResponseEntity<BaseResponse> getDepartmentById(@PathVariable Long id) {
+    public ResponseEntity<BaseResponse> getDepartmentById(@PathVariable int id) {
         BaseResponse response = departmentService.getDepartmentById(id);
         return new ResponseEntity<>(response, response.getStatus());
     }
