@@ -25,7 +25,7 @@ Before setting up the application, ensure you have the following installed:
 
 ### 2. **Database Configuration**
 
-- The application uses Postgres databases. Each service (Auth Server and Employee Service) has its own database.
+- The application uses Postgres databases. Each service (Auth Server and Employee Service) should have its own database.
 - Ensure that you configure the Postgres details in the `app.properties` files of each service. You can manage these properties centrally via the Config Server.
 - If needed, update the Postgres configuration on GitHub, commit the changes, and the Config Server will pick them up.
 
@@ -51,8 +51,8 @@ Before setting up the application, ensure you have the following installed:
 
 ### Swagger URLs
 
-- The Swagger documentation for each service can be accessed via the following URLs (replace `localhost` and ports with your specific configuration):
-  - **Authentication Service**: `http://localhost:8080/swagger-ui/index.html#/`
+- The Swagger documentation for each service can be accessed via the following URLs:
+  - **Authentication Server**: `http://localhost:8080/swagger-ui/index.html#/`
   - **Employee Service**: `http://localhost:8081/swagger-ui/index.html#/`
 
 ## Seed Data
