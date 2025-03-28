@@ -1,8 +1,14 @@
 package com.EmployeeMgtSystem.AuthenticationServer.controller;
 
+import com.EmployeeMgtSystem.AuthenticationServer.config.CustomUserDetails;
+import com.EmployeeMgtSystem.AuthenticationServer.dto.request.AssignAndUnassignRolesRequest;
+import com.EmployeeMgtSystem.AuthenticationServer.dto.request.CreateRoleRequest;
+import com.EmployeeMgtSystem.AuthenticationServer.dto.response.BaseResponse;
 import com.EmployeeMgtSystem.AuthenticationServer.model.Role;
 import com.EmployeeMgtSystem.AuthenticationServer.service.RoleService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,8 +21,8 @@ public class RoleController {
     private RoleService roleService;
 
     @PostMapping
-    public Role createRole(@RequestBody Role role) {
-        return roleService.createRole(role);
+    public BaseResponse createRole(CreateRoleRequest request, @AuthenticationPrincipal CustomUserDetails user) {
+        return roleService.createRole(request,user.getName());
     }
 
     @PutMapping("/{id}")
@@ -24,9 +30,9 @@ public class RoleController {
         return roleService.updateRole(id, role);
     }
 
-    @DeleteMapping("/{id}")
-    public void deleteRole(@PathVariable int id) {
-        roleService.deleteRole(id);
+    @DeleteMapping("/{roleId}")
+    public void deleteRole(@PathVariable int roleId) {
+        roleService.deleteRole(roleId);
     }
 
     @GetMapping
@@ -34,9 +40,14 @@ public class RoleController {
         return roleService.getAllRoles();
     }
 
-    @PostMapping("/{roleId}/permissions")
-    public void assignPermissionsToRole(@PathVariable int roleId, @RequestBody List<Integer> permissionIds) {
-        roleService.assignPermissionsToRole(roleId, permissionIds);
+    @PostMapping("/assign-permissions")
+    public BaseResponse assignPermissionsToRole(@RequestBody AssignAndUnassignRolesRequest request) {
+        return roleService.assignPermissionsToRole(request);
+    }
+
+    @PostMapping("/unassign-permissions")
+    public BaseResponse unassignPermissionsFromRole(@RequestBody AssignAndUnassignRolesRequest request) {
+        return roleService.unAssignPermissionsFromRole(request);
     }
 }
 
