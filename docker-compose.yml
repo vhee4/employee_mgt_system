@@ -1,0 +1,101 @@
+#version: '3.8'
+
+services:
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"  # RabbitMQ communication port
+      - "15672:15672" # RabbitMQ Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: chidinma
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - microservices-network
+#  postgres:
+#    image: postgres:14
+#    container_name: postgres
+#    ports:
+#      - "5433:5432"
+#    environment:
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: root
+#      DATABASE_HOST: localhost
+#
+#    networks:
+#      - microservices-network
+#    volumes:
+#      - postgres-data:/var/lib/postgresql/data
+##    command: >
+##      bash -c "
+##        until pg_isready -h localhost -p 5432 -U postgres -c 'SELECT 1' > /dev/null 2>&1; do
+##          echo 'Waiting for PostgreSQL to be ready...';
+##          sleep 2;
+##        done;
+##        psql -U postgres -c 'CREATE DATABASE authdb;' &&
+##        psql -U postgres -c 'CREATE DATABASE employeedb;'
+##        tail -f /dev/null
+##      "
+#  discovery-service:
+#    build: ./DiscoveryService
+#    container_name: discovery-service
+#    ports:
+#      - "8761:8761"
+#    networks:
+#      - microservices-network
+#
+#  config-server:
+#    build: ./ConfigServer
+#    container_name: config-server
+#    ports:
+#      - "9000:9000"
+#    depends_on:
+#      - discovery-service
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    networks:
+#      - microservices-network
+#
+#  api-gateway:
+#    build: ./ApiGateway
+#    ports:
+#      - "8082:8082"
+#    depends_on:
+#      - config-server
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    networks:
+#      - microservices-network
+#
+#  auth-service:
+#    build: ./AuthenticationServer
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      - config-server
+#      - postgres
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#      - POSTGRES_DB=authserver
+#
+#    networks:
+#      - microservices-network
+#
+#  employee-service:
+#    build: ./EmployeeService
+#    ports:
+#      - "8081:8081"
+#    depends_on:
+#      - config-server
+#      - postgres
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#      - POSTGRES_DB=employeeservice
+#    networks:
+#      - microservices-network
+
+networks:
+  microservices-network:
+
+#volumes:
+#  postgres-data:

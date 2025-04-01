@@ -42,6 +42,7 @@ public class DepartmentController {
             @ApiResponse(responseCode = "404", description = "HTTP STATUS NOT_FOUND", content = @Content(schema = @Schema(implementation = ErrorDetails.class))),
             @ApiResponse(responseCode = "400", description = "HTTP STATUS BAD_REQUEST", content = @Content(schema = @Schema(implementation = ErrorDetails.class)))
     })
+
     @PostMapping
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<BaseResponse> createDepartment(@Valid @RequestBody CreateDepartmentRequest request, HttpServletRequest httpRequest,
