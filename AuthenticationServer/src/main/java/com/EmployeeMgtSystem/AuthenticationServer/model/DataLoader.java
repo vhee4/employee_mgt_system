@@ -102,7 +102,7 @@
 //            user.setUsername(firstName + " " + lastName);
 //            user.setFirstName(firstName);
 //            user.setLastName(lastName);
-//            user.setRoles(Set.of(role));
+//            user.setRoles(Set.of(role));f
 //            userRepository.save(user);
 //        }
 //    }

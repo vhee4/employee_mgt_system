@@ -1,6 +1,7 @@
 package com.EmployeeMgtSystem.AuthenticationServer.service.impl;
 
 import com.EmployeeMgtSystem.AuthenticationServer.config.JwtConfig;
+import com.EmployeeMgtSystem.AuthenticationServer.config.JwtUtil;
 import com.EmployeeMgtSystem.AuthenticationServer.dto.request.ChangePasswordRequest;
 import com.EmployeeMgtSystem.AuthenticationServer.dto.request.CreateUserRequest;
 import com.EmployeeMgtSystem.AuthenticationServer.dto.response.BaseResponse;
@@ -16,8 +17,14 @@ import com.EmployeeMgtSystem.AuthenticationServer.repository.RoleRepository;
 import com.EmployeeMgtSystem.AuthenticationServer.repository.UserRepository;
 import com.EmployeeMgtSystem.AuthenticationServer.service.AuthService;
 import com.EmployeeMgtSystem.AuthenticationServer.validator.PasswordValidator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -32,48 +39,50 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtConfig jwtConfig;
-    private RoleRepository roleRepository;
-    private UserRepository userRepository;
-    private PasswordEncoder passwordEncoder;
-    private PasswordValidator passwordValidator;
+    private final RoleRepository roleRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final PasswordValidator passwordValidator;
+    private final RabbitTemplate rabbitTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+//    private final JwtUtil jwtUtil;
 
-    @Autowired
-    public AuthServiceImpl(AuthenticationManager authenticationManager, JwtConfig jwtConfig, RoleRepository roleRepository, UserRepository userRepository, PasswordEncoder passwordEncoder, PasswordValidator passwordValidator) {
-        this.authenticationManager = authenticationManager;
-        this.jwtConfig = jwtConfig;
-        this.roleRepository = roleRepository;
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.passwordValidator = passwordValidator;
-    }
+//    @Autowired
+//    public AuthServiceImpl(AuthenticationManager authenticationManager, JwtConfig jwtConfig, RoleRepository roleRepository, UserRepository userRepository, PasswordEncoder passwordEncoder, PasswordValidator passwordValidator) {
+//        this.authenticationManager = authenticationManager;
+//        this.jwtConfig = jwtConfig;
+//        this.roleRepository = roleRepository;
+//        this.userRepository = userRepository;
+//        this.passwordEncoder = passwordEncoder;
+//        this.passwordValidator = passwordValidator;
+//    }
 
     @Override
     public BaseResponse login(LoginRequest request) {
         try {
             User user = userRepository.findByEmail(request.getEmail())
-                    .orElseThrow(()-> new ResourceNotFoundException("User not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
             if (user == null) {
-                throw  new BadRequestException("Invalid Login Credentials");
+                throw new BadRequestException("Invalid Login Credentials");
             }
-            if(user.getStatus().equals(Status.PENDING)){
-                throw  new BadRequestException("Cannot Login. Status: Pending");
+            if (user.getStatus().equals(Status.PENDING)) {
+                throw new BadRequestException("Cannot Login. Status: Pending");
             }
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
-            if(!authentication.isAuthenticated()){
-                throw  new BadRequestException("Invalid Login Credentials");
+            if (!authentication.isAuthenticated()) {
+                throw new BadRequestException("Invalid Login Credentials");
             }
             Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
             List<String> permissions = extractPermissionsFromAuthorities(authorities);
@@ -91,19 +100,19 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public BaseResponse changePassword(ChangePasswordRequest request) {
-        if (request.getEmail() == null ||request.getEmail().isEmpty() || request.getOldPassword() == null || request.getNewPassword() == null) {
+        if (request.getEmail() == null || request.getEmail().isEmpty() || request.getOldPassword() == null || request.getNewPassword() == null) {
             return BaseResponse.getResponse("Invalid input", null, HttpStatus.BAD_REQUEST);
         }
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(()->new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             return BaseResponse.getResponse("Old password is incorrect", null, HttpStatus.UNAUTHORIZED);
         }
 
         boolean validPassword = passwordValidator.validate(request.getNewPassword());
-        if(!validPassword){
+        if (!validPassword) {
             throw new BadRequestException("Password must be at least 8 characters long, and include at least one uppercase letter, one lowercase letter, one digit, and one special character.");
         }
 
@@ -114,13 +123,13 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public BaseResponse createUser(CreateUserRequest request,Authentication authentication) {
+    public BaseResponse createUser(CreateUserRequest request, Authentication authentication) {
         Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
 
-        if(existingUser.isPresent()){
-            throw  new BadRequestException("Email already exists");
+        if (existingUser.isPresent()) {
+            throw new BadRequestException("Email already exists");
         }
-        Role role = roleRepository.findByNameIgnoreCase(request.getRole()).orElseThrow(()-> new ResourceNotFoundException("Role not found"));
+        Role role = roleRepository.findByNameIgnoreCase(request.getRole()).orElseThrow(() -> new ResourceNotFoundException("Role not found"));
         User user = User.builder()
                 .email(request.getEmail())
                 .roles(Collections.singleton(role))
@@ -130,18 +139,57 @@ public class AuthServiceImpl implements AuthService {
                 .username(request.getFirstName() + " " + request.getLastName())
                 .build();
         user.setStatus(Status.ACTIVE);
-        user.setCreatedBy(authentication.getName());
+        user.setCreatedBy(authentication != null ? authentication.getName() : "Super Admin");
         user.setCreatedTime(LocalDateTime.now());
         userRepository.save(user);
 
-        UserResponse response = getCreateUserResponse(user, role);
-        System.out.println("Response: "+response.toString());
-        return BaseResponse.getResponse("User created Successfully",response, HttpStatus.CREATED);
+        UserResponse response = getCreateUserResponse(user, role, request.getPassword());
+        System.out.println("Response: " + response.toString());
+        return BaseResponse.getResponse("User created Successfully", response, HttpStatus.CREATED);
+    }
+
+    @RabbitListener(queues = "employee.user.create.request.queue")
+    public void handleEmployeeUserCreation(Message message) {
+        try {
+            // Log received message
+            System.out.println("Received Message: " + Arrays.toString(message.getBody()));
+
+            // Extract headers
+//            MessageProperties messageProperties = message.getMessageProperties();
+//            Map<String, Object> headers = messageProperties.getHeaders();
+//            String jwtToken = (String) headers.get("Authorization");
+
+            // Deserialize message body
+            String body = new String(message.getBody());
+            System.out.println("request received: "+body);
+            CreateUserRequest request = objectMapper.readValue(body, CreateUserRequest.class);
+
+//            CreateUserRequest request = objectMapper.convertValue(createEmployeeResponse.getData(), CreateUserRequest.class);
+            System.out.println("create user request received: "+request);
+
+
+            // Call user service to create user
+            BaseResponse response = createUser(request, null);
+
+            String jsonResponse = objectMapper.writeValueAsString(response); // Convert DTO to JSON
+            System.out.println("sending message to auth service");
+
+            // 🚀 Publish response to the exchange
+            rabbitTemplate.convertAndSend("user_creation_exchange", "user.create.response", jsonResponse);
+            System.out.println("Published user creation response:");
+
+        } catch (Exception e) {
+            System.err.println("Failed to process employee user creation request: " + e.getMessage());
+        }
+    }
+
+    public String convertLocalDateTimeToString(LocalDateTime createdTime) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+        return createdTime.format(formatter);
     }
 
 
-
-    private UserResponse getCreateUserResponse(User user, Role role) {
+    private UserResponse getCreateUserResponse(User user, Role role, String password) {
         return UserResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
@@ -150,8 +198,9 @@ public class AuthServiceImpl implements AuthService {
                 .username(user.getUsername())
                 .status(user.getStatus().toString())
                 .createdBy(user.getCreatedBy())
-                .createdTime(user.getCreatedTime())
+                .createdTime(convertLocalDateTimeToString(user.getCreatedTime()))
                 .roles(Collections.singleton(role.getName()))
+                .password(password)
                 .build();
     }
 

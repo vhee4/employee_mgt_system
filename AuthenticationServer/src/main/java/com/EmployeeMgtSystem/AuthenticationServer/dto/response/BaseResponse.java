@@ -1,14 +1,18 @@
 package com.EmployeeMgtSystem.AuthenticationServer.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import org.springframework.http.HttpStatus;
+
+import java.io.Serializable;
 
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
-public class BaseResponse {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class BaseResponse implements Serializable {
     @JsonIgnore
     private HttpStatus status;
     private int code;

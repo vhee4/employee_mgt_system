@@ -2,15 +2,19 @@ package com.EmployeeMgtSystem.AuthenticationServer.dto.request;
 
 
 import com.EmployeeMgtSystem.AuthenticationServer.model.Role;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
+
+import java.io.Serializable;
 
 @Getter
 @Setter
-@Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class CreateUserRequest {
+@JsonIgnoreProperties(ignoreUnknown = true)
+@ToString
+public class CreateUserRequest implements Serializable {
     @NonNull
     private String role;
     @NonNull

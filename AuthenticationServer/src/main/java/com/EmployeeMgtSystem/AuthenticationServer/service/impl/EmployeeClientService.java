@@ -8,6 +8,8 @@ import com.EmployeeMgtSystem.AuthenticationServer.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Set;
 
 @Service
@@ -26,9 +28,13 @@ public class EmployeeClientService {
                 .username(user.getUsername())
                 .status(user.getStatus().toString())
                 .createdBy(user.getCreatedBy())
-                .createdTime(user.getCreatedTime())
+                .createdTime(convertLocalDateTimeToString(user.getCreatedTime()))
                 .roles(Set.of(user.getRoles().stream().map(Role::getName).toString()))
                 .build();
+    }
+    public String convertLocalDateTimeToString(LocalDateTime createdTime) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+        return createdTime.format(formatter);
     }
 
 }
